@@ -2,6 +2,5 @@
 
 ## Completed
 - Calculator
-
-## In-progress
 - Wordle
+- Dice Roller
