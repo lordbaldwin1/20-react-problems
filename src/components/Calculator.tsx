@@ -17,7 +17,6 @@ export default function Calculator() {
   };
 
   const handleKeyboardInput = (e: ChangeEvent<HTMLInputElement>) => {
-    // if input is character FUCK OFF!!!
     const newValue = e.target.value;
     if (!isNaN(Number(newValue))) {
       setInputNumber(newValue);

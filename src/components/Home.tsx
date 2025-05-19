@@ -9,6 +9,9 @@ export default function Home() {
       <Link to="/wordle" className="text-blue-300 hover:underline mx-auto">
         Wordle
       </Link> 
+      <Link to="/diceroll" className="text-blue-300 hover:underline mx-auto">
+        Dice Roll
+      </Link> 
     </div>
   );
 }

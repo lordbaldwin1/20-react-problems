@@ -3,6 +3,7 @@ import Home from "./components/Home";
 import Calculator from "./components/Calculator";
 import Navbar from "./components/Navbar";
 import Wordle from "./components/Wordle";
+import DiceRoll from "./components/DiceRoll";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/calculator" element={<Calculator />} />
         <Route path="/wordle" element={<Wordle />} />
+        <Route path="/diceroll" element={<DiceRoll />} />
 
         <Route
           path="*"
