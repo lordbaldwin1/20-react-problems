@@ -6,7 +6,7 @@ import Wordle from "./components/Wordle";
 
 function App() {
   return (
-    <div className="bg-gray-700 text-gray-100 h-screen">
+    <div className="bg-gray-700 text-gray-100 min-h-screen">
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
