@@ -4,8 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 
-const testData =
-  "open go tell too now follow great school end have from while down high head follow by through she of well see";
+const testData = "open go tell";
 
 function Word(props: {
   word: string;
@@ -130,10 +129,10 @@ export default function TypeTest() {
     setGameStatus("after");
   }
 
-  function handleRestartGame() {
-    setGameStatus("before");
-    setSeconds(0);
-  }
+  // function handleRestartGame() {
+  //   setGameStatus("before");
+  //   setSeconds(0);
+  // }
 
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -146,10 +145,21 @@ export default function TypeTest() {
     const newValue = e.target.value;
 
     if (gameStatus === "before") {
-      setGameStatus("during");
+      handleStartGame();
     }
     if (newValue.length > 0 && newValue[newValue.length - 1] === " ") {
       return;
+    }
+
+    console.log(completedWords.length);
+    console.log(sampleText.length);
+
+    // GAME END LOGIC
+    if (
+      sampleText.length - 1 === completedWords.length &&
+      sampleText[sampleText.length - 1] === newValue
+    ) {
+      handleEndGame();
     }
     setInput(newValue);
   };
@@ -193,6 +203,10 @@ export default function TypeTest() {
         extra: prev.extra + extraCount,
         missed: prev.missed + missedCount,
       }));
+
+      if (newCompletedWords.length === sampleText.length) {
+        handleEndGame();
+      }
     }
   };
 
@@ -203,6 +217,7 @@ export default function TypeTest() {
       <p>{letterCount.incorrect}</p>
       <p>{letterCount.extra}</p>
       <p>{letterCount.missed}</p>
+      <p>{`Game Status: ${gameStatus}`}</p>
       <input
         ref={inputRef}
         onBlur={() => {
