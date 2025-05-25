@@ -12,10 +12,9 @@ const GUESS_LENGTH = 5;
 
 const initializeLetterStatus = () => {
   const initialStatus: Record<string, string> = {};
-  // Initialize all uppercase letters A-Z with a default status
   for (let i = 65; i <= 90; i++) {
     const letter = String.fromCharCode(i);
-    initialStatus[letter] = "unused"; // or "unknown", whatever your default status is
+    initialStatus[letter] = "unused";
   }
   return initialStatus;
 };

@@ -12,6 +12,9 @@ export default function Home() {
       <Link to="/diceroll" className="text-blue-300 hover:underline mx-auto">
         Dice Roll
       </Link> 
+      <Link to="/typetest" className="text-blue-300 hover:underline mx-auto">
+        Type Test
+      </Link> 
     </div>
   );
 }

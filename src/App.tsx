@@ -4,6 +4,7 @@ import Calculator from "./components/Calculator";
 import Navbar from "./components/Navbar";
 import Wordle from "./components/Wordle";
 import DiceRoll from "./components/DiceRoll";
+import TypeTest from "./components/TypeTest";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/calculator" element={<Calculator />} />
         <Route path="/wordle" element={<Wordle />} />
         <Route path="/diceroll" element={<DiceRoll />} />
+        <Route path="/typetest" element={<TypeTest />} />
 
         <Route
           path="*"

@@ -4,7 +4,7 @@ export default function DiceRoll() {
   const [dice, setDice] = useState<number>(0);
 
   const calculateRandomDice = () => {
-    const result = Math.floor(Math.random() * (6 - 1 + 1) + 1);
+    const result = Math.floor(Math.random() * (6) + 1);
 
     setDice(result);
   };
