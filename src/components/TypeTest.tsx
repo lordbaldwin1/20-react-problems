@@ -2,9 +2,7 @@
 // if letter at current state index === letter at data index
 
 import { useEffect, useRef, useState } from "react";
-import { RotateCcw } from "lucide-react";
-
-const testData = "open go tell";
+import { generateRandomWords } from "../utils/functions";
 
 function Word(props: {
   word: string;
@@ -89,30 +87,34 @@ interface LetterCount {
   missed: number;
 }
 
-export default function TypeTest() {
-  const [input, setInput] = useState<string>("");
-  const [currentWordIndex, setCurrentWordIndex] = useState<number>(0);
-  const [completedWords, setCompletedWords] = useState<string[]>([]);
-  const [letterCount, setLetterCount] = useState<LetterCount>({
-    correct: 0,
-    incorrect: 0,
-    extra: 0,
-    missed: 0,
-  });
-  const [gameStatus, setGameStatus] = useState<"before" | "during" | "after">(
-    "before"
-  );
-  const [seconds, setSeconds] = useState<number>(0);
+type GameStatus = "before" | "during" | "after";
 
-  // TODO: ADD RANDOM TEXTS AS SAMPLE
-  const sampleText = testData.split(" ");
+// Game Component to handle state:
+// handle game status
+// handle calculation of WPM
+// handle whether test is displayed or results is displayed
+//
+// memo type test component?
+// what state will type test keep?
+// input, completedWords, currentWordIndex, sampleText (prop?)
+
+export default function Game() {
+  const [gameStatus, setGameStatus] = useState<GameStatus>("before");
+  const [gameTime, setGameTime] = useState<number>(0);
+  const [wpm, setWpm] = useState<number>(0);
+  const [accuracy, setAccuracy] = useState<number>(0);
+  const [rawWpm, setRawWpm] = useState<number>(0);
+  const [wordCount, setWordCount] = useState<number>(25);
+  const [sampleText, setSampleText] = useState<string[]>(
+    generateRandomWords(wordCount).split(" ")
+  );
 
   useEffect(() => {
     let intervalId: number | undefined;
 
     if (gameStatus === "during") {
       intervalId = setInterval(() => {
-        setSeconds((prev) => prev + 1);
+        setGameTime((prev) => prev + 1);
       }, 1000);
     }
 
@@ -121,13 +123,102 @@ export default function TypeTest() {
     };
   }, [gameStatus]);
 
-  function handleStartGame() {
+  function startGame() {
     setGameStatus("during");
   }
 
-  function handleEndGame() {
+  function endGame() {
     setGameStatus("after");
   }
+
+  function restartGame() {
+    // TODO: implement
+    return;
+  }
+
+  function resetGameState() {
+    setGameStatus("before");
+    setGameTime(0);
+    setSampleText(generateRandomWords(wordCount).split(" "));
+    setWpm(0);
+    setRawWpm(0);
+    setAccuracy(0);
+  }
+
+  useEffect(() => {
+    setSampleText(generateRandomWords(wordCount).split(" "));
+  }, [wordCount])
+
+  function handleChangeWordCount(newWordCount: number) {
+    resetGameState();
+    setWordCount(newWordCount);
+  }
+
+  function calculateStats(correctChars: number, totalChars: number) {
+    const timeInMinutes = gameTime / 60;
+
+    const correctWordCount = correctChars / 5; // 1 word = 5 characters
+    const rawWordCount = totalChars / 5;
+
+    if (timeInMinutes === 0) return 0;
+
+    const wpm = Math.floor(correctWordCount / timeInMinutes);
+    const rawWpm = Math.floor(rawWordCount / timeInMinutes);
+    const accuracy = correctChars / totalChars;
+    setWpm(wpm);
+    setRawWpm(rawWpm);
+    setAccuracy(Math.floor(accuracy * 100));
+  }
+
+  return (
+    <div className="flex flex-col items-center">
+      <p>{`game status: ${gameStatus}`}</p>
+      <p>{`game time: ${gameTime}`}</p>
+      <p>{`WPM: ${wpm}`}</p>
+      <p>{`RAW WPM: ${rawWpm}`}</p>
+      <p>{`accuracy: ${accuracy}%`}</p>
+      <button className="bg-gray-950" onClick={() => handleChangeWordCount(10)}>
+        10
+      </button>
+      <button className="bg-gray-950" onClick={() => handleChangeWordCount(25)}>
+        25
+      </button>
+      <button className="bg-gray-950" onClick={() => handleChangeWordCount(50)}>
+        50
+      </button>
+      <TypeTest
+        startGame={startGame}
+        endGame={endGame}
+        restartGame={restartGame}
+        sampleText={sampleText}
+        gameStatus={gameStatus}
+        calculateStats={calculateStats}
+      />
+    </div>
+  );
+}
+
+function TypeTest(props: {
+  gameStatus: GameStatus;
+  startGame: () => void;
+  endGame: () => void;
+  restartGame: () => void;
+  calculateStats: (correctChars: number, totalChars: number) => void;
+  sampleText: string[];
+}) {
+  const [input, setInput] = useState<string>("");
+  const [currentWordIndex, setCurrentWordIndex] = useState<number>(0);
+  const [letterCount, setLetterCount] = useState<LetterCount>({
+    correct: 0,
+    incorrect: 0,
+    extra: 0,
+    missed: 0,
+  });
+  const [completedWords, setCompletedWords] = useState<string[]>([]);
+
+  // TODO: ADD RANDOM TEXTS AS SAMPLE
+  const gameStatus = props.gameStatus;
+  const sampleText = props.sampleText;
 
   // function handleRestartGame() {
   //   setGameStatus("before");
@@ -144,21 +235,23 @@ export default function TypeTest() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
 
-    if (gameStatus === "before") {
-      handleStartGame();
+    // Start game on first input
+    if (completedWords.length === 0) {
+      props.startGame();
     }
     if (newValue.length > 0 && newValue[newValue.length - 1] === " ") {
       return;
     }
 
-    console.log(completedWords.length);
-    console.log(sampleText.length);
-
-    // GAME END LOGIC
+    // End game when last word correctly entered
     if (
       sampleText.length - 1 === completedWords.length &&
       sampleText[sampleText.length - 1] === newValue
     ) {
+      updateLetterCount(
+        newValue.split(""),
+        sampleText[sampleText.length - 1].split("")
+      );
       handleEndGame();
     }
     setInput(newValue);
@@ -175,34 +268,7 @@ export default function TypeTest() {
       const submittedWord =
         newCompletedWords[newCompletedWords.length - 1].split("");
       const sampleWord = sampleText[newCompletedWords.length - 1].split("");
-
-      const extraCount =
-        submittedWord.length > sampleWord.length
-          ? submittedWord.slice(sampleWord.length).length
-          : 0;
-
-      const missedCount =
-        submittedWord.length < sampleWord.length
-          ? sampleWord.length - submittedWord.length
-          : 0;
-
-      let correctCount = 0;
-      let incorrectCount = 0;
-
-      for (let i = 0; i < submittedWord.length; i++) {
-        if (submittedWord[i] === sampleWord[i]) {
-          correctCount++;
-        } else if (submittedWord[i] !== sampleWord[i]) {
-          incorrectCount++;
-        }
-      }
-
-      setLetterCount((prev) => ({
-        correct: prev.correct + correctCount,
-        incorrect: prev.incorrect + incorrectCount,
-        extra: prev.extra + extraCount,
-        missed: prev.missed + missedCount,
-      }));
+      updateLetterCount(submittedWord, sampleWord);
 
       if (newCompletedWords.length === sampleText.length) {
         handleEndGame();
@@ -210,14 +276,59 @@ export default function TypeTest() {
     }
   };
 
+  function updateLetterCount(submittedWord: string[], sampleWord: string[]) {
+    if (gameStatus !== "during") {
+      return;
+    }
+    const extraCount =
+      submittedWord.length > sampleWord.length
+        ? submittedWord.slice(sampleWord.length).length
+        : 0;
+
+    const missedCount =
+      submittedWord.length < sampleWord.length
+        ? sampleWord.length - submittedWord.length
+        : 0;
+
+    let correctCount = 0;
+    let incorrectCount = 0;
+
+    for (let i = 0; i < submittedWord.length; i++) {
+      if (submittedWord[i] === sampleWord[i]) {
+        correctCount++;
+      } else if (submittedWord[i] !== sampleWord[i]) {
+        incorrectCount++;
+      }
+    }
+
+    setLetterCount((prev) => ({
+      correct: prev.correct + correctCount,
+      incorrect: prev.incorrect + incorrectCount,
+      extra: prev.extra + extraCount,
+      missed: prev.missed + missedCount,
+    }));
+  }
+
+  function handleEndGame() {
+    const characterCount = completedWords.reduce((count, string) => {
+      return count + string.length;
+    }, 0);
+    const spaceCount = completedWords.length - 1;
+
+    const totalCharCount = characterCount + spaceCount;
+    const correctCharCount =
+      totalCharCount - (letterCount.extra + letterCount.incorrect);
+
+    props.calculateStats(correctCharCount, totalCharCount);
+    props.endGame();
+    setCompletedWords([]);
+    setInput('');
+    setCurrentWordIndex(0);
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <p>{`Time: ${seconds}`}</p>
-      <p>{letterCount.correct}</p>
-      <p>{letterCount.incorrect}</p>
-      <p>{letterCount.extra}</p>
-      <p>{letterCount.missed}</p>
-      <p>{`Game Status: ${gameStatus}`}</p>
+    <div className="flex flex-col items-center justify-start mt-8 min-h-screen">
+      <p>{`letter counts: correct: ${letterCount.correct} incorrect: ${letterCount.incorrect} extra: ${letterCount.extra} missed: ${letterCount.missed}`}</p>
       <input
         ref={inputRef}
         onBlur={() => {
