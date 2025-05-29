@@ -78,7 +78,7 @@ export default function TypeTest() {
 
   // GAME STATE
   const [gameState, setGameState] = useState<GameState>({
-    status: "after",
+    status: "before",
     mode: "words",
     time: 0,
     stats: {
@@ -418,7 +418,7 @@ export default function TypeTest() {
             <div className="w-full flex items-center justify-center">
               {memoizedGameModeConfig}
             </div>
-          <div className="flex flex-col items-center justify-start mt-8 min-h-screen">
+          <div className="flex flex-col items-center justify-start mt-8">
             <input
               ref={inputRef}
               onBlur={() => {

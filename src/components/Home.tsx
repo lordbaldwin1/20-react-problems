@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+ import { Link } from "react-router-dom";
 
 export default function Home() {
   return (
@@ -15,6 +15,12 @@ export default function Home() {
       <Link to="/typetest" className="text-blue-300 hover:underline mx-auto">
         Type Test
       </Link> 
+      <Link to="/quiz" className="text-blue-300 hover:underline mx-auto">
+        Quiz
+      </Link> 
+      <Link to="/search" className="text-blue-300 hover:underline mx-auto">
+        Search
+      </Link>
     </div>
   );
 }

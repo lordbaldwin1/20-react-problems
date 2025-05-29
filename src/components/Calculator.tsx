@@ -78,7 +78,7 @@ export default function Calculator() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
+    <div className="flex flex-col items-center justify-center">
       <div className="grid grid-cols-4 gap-2 bg-green-300 text-gray-900 p-2 rounded-sm">
         <div className="col-span-4">
           <input

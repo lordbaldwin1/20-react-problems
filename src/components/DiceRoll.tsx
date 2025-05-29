@@ -10,7 +10,7 @@ export default function DiceRoll() {
   };
 
   return (
-    <div className="flex flex-col items-center mt-10 gap-4 h-screen">
+    <div className="flex flex-col items-center mt-10 gap-4">
       <button
         className="p-4 rounded-sm bg-gradient-to-b font-extrabold text-2xl text-gray-950 from-white to-indigo-500 hover:bg-gradient-to-b hover:from-black hover:to-amber-950 hover:text-gray-200 transition duration-300 ease-in-out"
         onClick={calculateRandomDice}
