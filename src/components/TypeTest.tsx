@@ -347,8 +347,8 @@ export default function TypeTest() {
         </div>
       )}
       {(gameState.status === "during" || gameState.status === "before") && (
-        <div className="flex flex-col gap-2 w-full">
-          <div className="w-full flex items-center justify-center">
+        <div className="flex flex-col gap-2 w-full max-w-4xl">
+          <div className="w-full flex justify-center">
             {memoizedGameModeConfig}
           </div>
           <div className="flex flex-col items-center justify-start mt-8">
@@ -366,7 +366,7 @@ export default function TypeTest() {
               onKeyDown={handleSubmit}
               className="bg-white border-2 mb-4 text-black absolute opacity-0"
             />
-            <div className="w-full ml-84 max-w-4xl">
+            <div className="w-full">
               {gameState.mode === "words" && (
                 <p className="text-2xl font-bold text-amber-400">{`${completedWords.length}/${gameState.sampleText.length}`}</p>
               )}
@@ -377,9 +377,9 @@ export default function TypeTest() {
             
             <div
               ref={containerRef}
-              className="relative h-[7.5em] overflow-hidden w-full max-w-4xl mx-auto flex justify-center items-start"
+              className="relative h-[7.5em] overflow-hidden w-full mx-auto flex justify-center items-start"
             >
-              <div className="flex ml-24 flex-wrap gap-x-4 gap-y-0 text-4xl font-mono tracking-wide">
+              <div className="flex flex-wrap gap-x-4 gap-y-0 text-4xl font-mono tracking-wide">
                 {gameState.sampleText.map((word, index) => (
                   <Word
                     key={index}
@@ -416,52 +416,61 @@ const Word = memo(forwardRef<HTMLDivElement, {
   const cursorPosition = input.length;
   const isCorrect = props.word === props.input;
   const extraLetters = input.length > word.length ? input.slice(word.length) : [];
-  const showEndCursor = props.isActive && ((cursorPosition === word.length && extraLetters.length === 0) || cursorPosition === word.length + extraLetters.length);
+  const showEndCursor = props.isActive && cursorPosition === word.length && extraLetters.length === 0;
 
   return (
-    <div 
+    <div
       ref={ref}
-      className="flex flex-row text-4xl font-mono tracking-wide"
+      className="flex flex-row text-4xl font-mono tracking-wide relative"
     >
-      {props.isCompleted && !isCorrect ? (
-        <div className="underline decoration-red-400">
-          {word.map((letter, index) => {
-            if (letter === input[index]) {
-              return <Letter key={index} letter={letter} status={"correct"} />;
-            } else if (letter !== input[index] && input[index]) {
-              return <Letter key={index} letter={letter} status={"incorrect"} />;
-            } else {
-              return <Letter key={index} letter={letter} status={"none"} />;
-            }
-          })}
-          {extraLetters.map((letter, index) => (
-            <Letter key={`extra-${index}`} letter={letter} status={"incorrect"} />
-          ))}
-        </div>
-      ) : (
-        <div className="flex">
-          {word.map((letter, index) => {
-            const showCursor = index === cursorPosition && props.isActive;
-            if (letter === input[index]) {
-              return <Letter key={index} letter={letter} status={"correct"} showCursor={showCursor} />;
-            } else if (letter !== input[index] && input[index]) {
-              return <Letter key={index} letter={letter} status={"incorrect"} showCursor={showCursor} />;
-            } else {
-              return <Letter key={index} letter={letter} status={"none"} showCursor={showCursor} />;
-            }
-          })}
-          {extraLetters.map((letter, index) => (
-            <Letter
-              key={`extra-${index}`}
-              letter={letter}
-              status={"incorrect"}
-              showCursor={word.length + index === cursorPosition && props.isActive}
-            />
-          ))}
-          {showEndCursor && (
-            <span className="border-l-2 border-white h-[1em] ml-[1px]"></span>
-          )}
-        </div>
+      <div className="flex">
+        {props.isCompleted && !isCorrect ? (
+          <div className="underline decoration-red-400 flex">
+            {word.map((letter, index) => {
+              if (letter === input[index]) {
+                return <Letter key={index} letter={letter} status={"correct"} />;
+              } else if (letter !== input[index] && input[index]) {
+                return <Letter key={index} letter={letter} status={"incorrect"} />;
+              } else {
+                return <Letter key={index} letter={letter} status={"none"} />;
+              }
+            })}
+            {extraLetters.map((letter, index) => (
+              <Letter key={`extra-${index}`} letter={letter} status={"incorrect"} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex">
+            {word.map((letter, index) => {
+              const showCursor = props.isActive && index === cursorPosition && cursorPosition !== word.length + extraLetters.length;
+              if (letter === input[index]) {
+                return <Letter key={index} letter={letter} status={"correct"} showCursor={showCursor} />;
+              } else if (letter !== input[index] && input[index]) {
+                return <Letter key={index} letter={letter} status={"incorrect"} showCursor={showCursor} />;
+              } else {
+                return <Letter key={index} letter={letter} status={"none"} showCursor={showCursor} />;
+              }
+            })}
+            {extraLetters.map((letter, index) => (
+              <Letter
+                key={`extra-${index}`}
+                letter={letter}
+                status={"incorrect"}
+                showCursor={props.isActive && word.length + index === cursorPosition && cursorPosition === word.length + extraLetters.length}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showEndCursor && (
+        <span
+          className="absolute top-0 bottom-0 border-l-2 border-white"
+          style={{
+            left: '100%',
+            height: '1em',
+          }}
+        ></span>
       )}
     </div>
   );
@@ -476,20 +485,30 @@ const Letter = memo(function Letter(props: {
   const status = props.status;
   const showCursor = props.showCursor;
 
-  let className = "";
+  let textColorClass = "";
   if (status === "correct") {
-    className = "text-white";
+    textColorClass = "text-white";
   } else if (status === "incorrect") {
-    className = "text-red-400";
+    textColorClass = "text-red-400";
   } else if (status === "none") {
-    className = "text-gray-400";
+    textColorClass = "text-gray-400";
   }
 
-  if (showCursor) {
-    className += " border-l-2 border-white";
-  }
-
-  return <span className={className}>{letter}</span>;
+  return (
+    <div className="relative inline-block">
+      <span className={textColorClass}>{letter}</span>
+      {showCursor && (
+        <span
+          className="absolute top-0 bottom-0 border-l-2 border-white"
+          style={{
+            left: '0',
+            height: '1em',
+            transform: 'translateX(-1px)'
+          }}
+        ></span>
+      )}
+    </div>
+  );
 });
 
 const GameModeConfig = memo(function GameModeConfig(props: {
