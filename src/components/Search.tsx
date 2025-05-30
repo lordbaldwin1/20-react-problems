@@ -8,10 +8,30 @@ export default function Search() {
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const query = e.target.value;
-
-    const matchingFruits = fruits.filter(fruit => fruit.toLowerCase().includes(query.toLowerCase()));
-    setQueryResult(matchingFruits);
     setInput(query);
+
+    if (query.length === 0) {
+      setQueryResult(fruits);
+    } else {
+      const matchingFruits = fruits.filter(fruit => fruit.toLowerCase().includes(query.toLowerCase()));
+      setQueryResult(matchingFruits);
+    }
+  }
+
+  function handleDisplayMatch(fruit: string) {
+    // split fruit into parts that are match and not
+    // bold the parts that match
+    const lowercaseFruit = fruit.toLowerCase();
+    const lowercaseInput = input.toLowerCase();
+    const queryStart = lowercaseFruit.indexOf(lowercaseInput);
+    const queryEnd = queryStart + input.length;
+    return (
+      <span>
+        {fruit.substring(0, queryStart)}
+        <strong className="font-extrabold">{fruit.substring(queryStart, queryEnd)}</strong>
+        {fruit.substring(queryEnd)}
+      </span>
+    )
   }
 
   return (
@@ -23,17 +43,13 @@ export default function Search() {
         value={input}
         onChange={handleInputChange}
       />
-      <p>{input}</p>
       {queryResult.length > 0 ? (
-        queryResult.map((result, index) => <p key={index}>{result}</p>)
+        queryResult.map((fruit) =>
+          handleDisplayMatch(fruit)
+        )
       ) : (
-        <p>No results found.</p>
+        input.length > 0 && <p>No results found.</p>
       )}
-      {input.length === 0 && 
-        fruits.map((fruit, index) => (
-          <p key={index}>{fruit}</p>
-        ))
-      }
     </div>
   );
 }
