@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, useCallback, memo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback, memo, forwardRef } from "react";
 import { generateRandomWords } from "../utils/functions";
 import { Clock, Hash } from "lucide-react";
 
@@ -30,39 +30,6 @@ interface GameState {
   sampleText: string[];
 }
 
-const Line = memo(function Line(props: {
-  words: string[];
-  completedWords: string[];
-  currentWordIndex: number;
-  input: string;
-  startIndex: number;
-}) {
-  const { words, completedWords, currentWordIndex, input, startIndex } = props;
-  
-  return (
-    <div className="flex flex-row">
-      {words.map((word, index) => {
-        const wordIndex = startIndex + index;
-        return (
-          <Word
-            key={wordIndex}
-            word={word}
-            input={
-              wordIndex < completedWords.length
-                ? completedWords[wordIndex]
-                : wordIndex === currentWordIndex
-                ? input
-                : ""
-            }
-            isActive={wordIndex === currentWordIndex}
-            isCompleted={wordIndex < currentWordIndex}
-          />
-        );
-      })}
-    </div>
-  );
-});
-
 export default function TypeTest() {
   const [input, setInput] = useState<string>("");
   const [currentWordIndex, setCurrentWordIndex] = useState<number>(0);
@@ -73,8 +40,8 @@ export default function TypeTest() {
     missed: 0,
   });
   const [completedWords, setCompletedWords] = useState<string[]>([]);
-  const [currentLine, setCurrentLine] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const activeWordRef = useRef<HTMLDivElement>(null);
 
   // GAME STATE
   const [gameState, setGameState] = useState<GameState>({
@@ -97,6 +64,17 @@ export default function TypeTest() {
 
   // Ref/useEffect to focus input box
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-scroll to active word
+  useEffect(() => {
+    if (activeWordRef.current && containerRef.current) {
+      activeWordRef.current.scrollIntoView({
+        behavior: 'instant',
+        block: 'center',
+        inline: 'nearest'
+      });
+    }
+  }, [currentWordIndex]);
 
   const handleEndGame = useCallback(() => {
     const characterCount = completedWords.reduce((count, string) => {
@@ -231,6 +209,13 @@ export default function TypeTest() {
       if (newCompletedWords.length === gameState.sampleText.length) {
         handleEndGame();
       }
+    } else if (e.key === "Backspace" && input.length === 0 && completedWords.length > 0) {
+      e.preventDefault();
+      const newCompletedWords = completedWords.slice(0, completedWords.length - 1);
+      setInput(completedWords[completedWords.length - 1]);
+      setCurrentWordIndex(currentWordIndex - 1);
+      setCompletedWords(newCompletedWords);
+      // UPDATE LETTER COUNT HERE TODO!!!!
     }
   }, [input, completedWords, currentWordIndex, gameState.sampleText, updateLetterCount, handleEndGame]);
 
@@ -309,58 +294,6 @@ export default function TypeTest() {
     />
   ), [gameState.mode, gameState.timeLimit, gameState.wordCount, resetGameState]);
 
-  // Function to split words into lines
-  const getLines = useCallback(() => {
-    if (!containerRef.current) return [];
-    
-    const container = containerRef.current;
-    const containerWidth = container.offsetWidth;
-    // Use 70% of container width for line breaking to prevent cutoff
-    const effectiveWidth = containerWidth * 0.7;
-    const lines: { words: string[], startIndex: number }[] = [{ words: [], startIndex: 0 }];
-    let currentLineWidth = 0;
-    let totalWords = 0;
-    
-    gameState.sampleText.forEach((word) => {
-      // Create a temporary span to measure word width
-      const tempSpan = document.createElement('span');
-      tempSpan.className = 'text-4xl font-mono tracking-wide mr-4';
-      tempSpan.textContent = word;
-      document.body.appendChild(tempSpan);
-      const wordWidth = tempSpan.offsetWidth;
-      document.body.removeChild(tempSpan);
-      
-      if (currentLineWidth + wordWidth > effectiveWidth && lines[lines.length - 1].words.length > 0) {
-        lines.push({ words: [word], startIndex: totalWords });
-        currentLineWidth = wordWidth;
-      } else {
-        lines[lines.length - 1].words.push(word);
-        currentLineWidth += wordWidth;
-      }
-      totalWords++;
-    });
-    
-    return lines;
-  }, [gameState.sampleText]);
-
-  // Function to determine which line contains the current word
-  const getCurrentLine = useCallback(() => {
-    const lines = getLines();
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (currentWordIndex >= line.startIndex && 
-          currentWordIndex < line.startIndex + line.words.length) {
-        return i;
-      }
-    }
-    return 0;
-  }, [currentWordIndex, getLines]);
-
-  // Update current line when word index changes
-  useEffect(() => {
-    setCurrentLine(getCurrentLine());
-  }, [currentWordIndex, getCurrentLine]);
-
   return (
     <div className="flex flex-col items-center mt-10" onClick={handleGameAreaClick}>
       {gameState.status === "after" && (
@@ -414,10 +347,10 @@ export default function TypeTest() {
         </div>
       )}
       {(gameState.status === "during" || gameState.status === "before") && (
-                  <div className="flex flex-col gap-2 w-full">
-            <div className="w-full flex items-center justify-center">
-              {memoizedGameModeConfig}
-            </div>
+        <div className="flex flex-col gap-2 w-full">
+          <div className="w-full flex items-center justify-center">
+            {memoizedGameModeConfig}
+          </div>
           <div className="flex flex-col items-center justify-start mt-8">
             <input
               ref={inputRef}
@@ -428,6 +361,7 @@ export default function TypeTest() {
               }}
               type="text"
               value={input}
+              maxLength={15}
               onChange={handleInputChange}
               onKeyDown={handleSubmit}
               className="bg-white border-2 mb-4 text-black absolute opacity-0"
@@ -440,24 +374,26 @@ export default function TypeTest() {
                 <p className="text-2xl font-bold text-amber-400">{`${gameState.time}s`}</p>
               )}
             </div>
-            <div 
+            
+            <div
               ref={containerRef}
-              className="relative h-[7.5em] overflow-hidden w-full max-w-4xl mx-auto flex justify-center"
+              className="relative h-[7.5em] overflow-hidden w-full max-w-4xl mx-auto flex justify-center items-start"
             >
-              <div 
-                className="absolute transition-transform duration-200"
-                style={{
-                  transform: `translateY(${currentLine > 1 ? -(currentLine - 1) * 2.5 : 0}em)`
-                }}
-              >
-                {getLines().map((line, index) => (
-                  <Line
+              <div className="flex ml-24 flex-wrap gap-x-4 gap-y-0 text-4xl font-mono tracking-wide">
+                {gameState.sampleText.map((word, index) => (
+                  <Word
                     key={index}
-                    words={line.words}
-                    completedWords={completedWords}
-                    currentWordIndex={currentWordIndex}
-                    input={input}
-                    startIndex={line.startIndex}
+                    ref={index === currentWordIndex ? activeWordRef : null}
+                    word={word}
+                    input={
+                      index < completedWords.length
+                        ? completedWords[index]
+                        : index === currentWordIndex
+                          ? input
+                          : ""
+                    }
+                    isActive={index === currentWordIndex}
+                    isCompleted={index < currentWordIndex}
                   />
                 ))}
               </div>
@@ -469,12 +405,12 @@ export default function TypeTest() {
   );
 }
 
-const Word = memo(function Word(props: {
+const Word = memo(forwardRef<HTMLDivElement, {
   word: string;
   input: string;
   isActive: boolean;
   isCompleted: boolean;
-}) {
+}>(function Word(props, ref) {
   const word = props.word.split("");
   const input = props.input.split("");
   const cursorPosition = input.length;
@@ -483,7 +419,10 @@ const Word = memo(function Word(props: {
   const showEndCursor = props.isActive && ((cursorPosition === word.length && extraLetters.length === 0) || cursorPosition === word.length + extraLetters.length);
 
   return (
-    <div className="flex flex-row mr-4 text-4xl font-mono tracking-wide">
+    <div 
+      ref={ref}
+      className="flex flex-row text-4xl font-mono tracking-wide"
+    >
       {props.isCompleted && !isCorrect ? (
         <div className="underline decoration-red-400">
           {word.map((letter, index) => {
@@ -526,7 +465,7 @@ const Word = memo(function Word(props: {
       )}
     </div>
   );
-});
+}));
 
 const Letter = memo(function Letter(props: {
   letter: string;
@@ -579,9 +518,8 @@ const GameModeConfig = memo(function GameModeConfig(props: {
       {/* Mode toggles */}
       <div className="flex space-x-4 mr-4">
         <button
-          className={`flex items-center hover:cursor-pointer hover:text-yellow-600 ${
-            mode === "time" ? "text-yellow-400" : ""
-          }`}
+          className={`flex items-center hover:cursor-pointer hover:text-yellow-600 ${mode === "time" ? "text-yellow-400" : ""
+            }`}
           onClick={() => {
             setGameMode("time");
             setTimeLimit(15);
@@ -596,9 +534,8 @@ const GameModeConfig = memo(function GameModeConfig(props: {
         </button>
 
         <button
-          className={`flex items-center hover:cursor-pointer hover:text-purple-600 ${
-            mode === "words" ? "text-purple-400" : ""
-          }`}
+          className={`flex items-center hover:cursor-pointer hover:text-purple-600 ${mode === "words" ? "text-purple-400" : ""
+            }`}
           onClick={() => {
             setGameMode("words");
             setWordCount(10);
@@ -622,11 +559,10 @@ const GameModeConfig = memo(function GameModeConfig(props: {
             {timeOptions.map((seconds) => (
               <button
                 key={seconds}
-                className={`px-2 py-1 rounded ${
-                  timeLimit === seconds
-                    ? "bg-yellow-500 text-gray-900"
-                    : "hover:bg-gray-700"
-                }`}
+                className={`px-2 py-1 rounded ${timeLimit === seconds
+                  ? "bg-yellow-500 text-gray-900"
+                  : "hover:bg-gray-700"
+                  }`}
                 onClick={() => {
                   setTimeLimit(seconds);
                   setWordCount(seconds * 2.5);
@@ -644,11 +580,10 @@ const GameModeConfig = memo(function GameModeConfig(props: {
             {wordOptions.map((count) => (
               <button
                 key={count}
-                className={`px-2 py-1 rounded ${
-                  wordCount === count
-                    ? "bg-purple-500 text-gray-900"
-                    : "hover:bg-gray-700"
-                }`}
+                className={`px-2 py-1 rounded ${wordCount === count
+                  ? "bg-purple-500 text-gray-900"
+                  : "hover:bg-gray-700"
+                  }`}
                 onClick={() => {
                   setWordCount(count);
                   resetGameState();
